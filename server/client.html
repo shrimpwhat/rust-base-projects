@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book Management</title>
+  </head>
+  <body>
+    <h2>Add Book</h2>
+    <form id="addBookForm">
+      <label for="title">Title:</label>
+      <input type="text" id="title" name="title" required /><br /><br />
+
+      <label for="author">Author:</label>
+      <input type="text" id="author" name="author" required /><br /><br />
+
+      <label for="year">Year:</label>
+      <input type="number" id="year" name="year" required /><br /><br />
+
+      <button type="submit">Add Book</button>
+    </form>
+
+    <h2>Update Book</h2>
+    <form id="updateBookForm">
+      <label for="id">Book ID:</label>
+      <input type="number" id="id" name="id" required /><br /><br />
+
+      <label for="title">Title:</label>
+      <input type="text" id="title" name="title" required /><br /><br />
+
+      <label for="author">Author:</label>
+      <input type="text" id="author" name="author" required /><br /><br />
+
+      <label for="year">Year:</label>
+      <input type="number" id="year" name="year" required /><br /><br />
+
+      <button type="submit">Update Book</button>
+    </form>
+
+    <h2>Delete Book</h2>
+    <form id="deleteBookForm">
+      <label for="id">Book ID:</label>
+      <input type="number" id="id" name="id" required /><br /><br />
+
+      <button type="submit">Delete Book</button>
+    </form>
+
+    <h2>Get Book by ID</h2>
+    <form id="getBookByIdForm">
+      <label for="id">Book ID:</label>
+      <input type="number" id="id" name="id" required /><br /><br />
+
+      <button type="submit">Get Book</button>
+    </form>
+
+    <h2>Get Books</h2>
+    <button id="getBooksButton">Get All Books</button>
+
+    <script>
+      const socket = new WebSocket("ws://127.0.0.1:8080/books");
+
+      socket.addEventListener("message", (msg) => {
+        console.log(msg);
+        const json = JSON.parse(msg.data);
+        if (Array.isArray(json)) {
+          const booksList = document.getElementById("booksList");
+          booksList.innerHTML = "";
+          json.forEach((book) => {
+            const bookDiv = document.createElement("div");
+            bookDiv.innerHTML = `<p>${book.title} by ${book.author} (${book.year})</p>`;
+            booksList.appendChild(bookDiv);
+          });
+        }
+      });
+
+      function getData(formId) {
+        const form = document.getElementById(formId);
+        const formData = new FormData(form);
+        const data = {};
+        formData.forEach((value, key) => {
+          data[key] = value;
+        });
+        data.id = parseInt(data.id);
+        data.year = parseInt(data.year);
+        return data;
+      }
+
+      document
+        .getElementById("addBookForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const book = getData("addBookForm");
+          socket.send(JSON.stringify({ action: "add_book", book }));
+        });
+
+      document
+        .getElementById("updateBookForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const data = getData("updateBookForm");
+          const id = data.id;
+          const book = {
+            title: data.title,
+            author: data.author,
+            year: data.year,
+          };
+          socket.send(JSON.stringify({ action: "update_book", id, book }));
+        });
+
+      document
+        .getElementById("deleteBookForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const data = getData("deleteBookForm");
+          const id = data.id;
+          socket.send(JSON.stringify({ action: "delete_book", id }));
+        });
+
+      document
+        .getElementById("getBooksButton")
+        .addEventListener("click", function () {
+          socket.send(JSON.stringify({ action: "get_books" }));
+        });
+
+      document
+        .getElementById("getBookByIdForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const data = getData("getBookByIdForm");
+          const id = data.id;
+          socket.send(JSON.stringify({ action: "get_book", id }));
+        });
+    </script>
+  </body>
+</html>
